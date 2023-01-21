@@ -4,8 +4,46 @@ import csv
 import os
 import sys
 
+side_winner = None
+time_win = None
+kill_player = None
+kill_enemy = None
+
+game_over = False
+
+
+def change_kill_player(var):
+    global kill_player
+    kill_player = var
+
+
+def change_kill_enemy(var):
+    global kill_enemy
+    kill_enemy = var
+
+
+def change_time_win(var):
+    global time_win
+    time_win = var
+
+
+def change_side_winner(var):
+    global side_winner
+    side_winner = var
+
+
+def change_game_over(var):
+    global game_over
+    game_over = var
+
 
 def game(level, speed, hp_base):
+    global side_winner
+    global time_win
+    global kill_player
+    global kill_enemy
+    global game_over
+
     with open(level, encoding="utf8") as csvfile:
         reader = csv.DictReader(csvfile, delimiter=',', quotechar='"')
         level_data = list(reader)
@@ -49,7 +87,6 @@ def game(level, speed, hp_base):
         else:
             image = image.convert_alpha()
         return image
-
 
     class Unit(pygame.sprite.Sprite):
 
@@ -106,7 +143,7 @@ def game(level, speed, hp_base):
             return self.type_unit
 
         def update_movement(self):
-            if self.side == "player":
+            if self.side == "player" and not game_over:
                 try:
                     section = way_start_player_pos.index(list(map(lambda x: str(int(x)), self.start_pos)))
                     path = level_data[0]["way"].split("|")[section].split(";")
@@ -115,7 +152,7 @@ def game(level, speed, hp_base):
                     enemy_base.hearth()
                     self.kill()
                     return
-            else:
+            elif self.side == "enemy" and not game_over:
                 try:
                     section = way_start_enemy_pos.index(list(map(lambda x: str(int(x)), self.start_pos)))
                     path = level_data[0]["way"].split("|")[section].split(";")
@@ -124,6 +161,8 @@ def game(level, speed, hp_base):
                     player_base.hearth()
                     self.kill()
                     return
+            else:
+                return
             self.spawn(board, tuple(map(lambda x: float(x), new_cell.split(","))))
 
            # print(self.get_cell(), self.get_side(), self.get_type_unit())
@@ -176,7 +215,9 @@ def game(level, speed, hp_base):
 
         def hearth(self):
             self.hp -= 5
-            print(self.hp)
+            if self.hp <= 0:
+                change_game_over(True)
+                self.kill()
 
 
     class Board:
@@ -251,7 +292,7 @@ def game(level, speed, hp_base):
                     cell = board.get_cell(event.pos)
                     if any(map(lambda x:
                                True if int(x[0]) == cell[0] and int(x[1]) == cell[1] else False, way_start_player_pos)) \
-                            and cell not in [elem.get_cell() for elem in player_unit.sprites()]:
+                            and cell not in [elem.get_cell() for elem in player_unit.sprites()] and not game_over:
                         Unit(all_sprites, type_unit=subject_selection, side="player").spawn(board, board.get_cell(event.pos))
 
             elif event.type == pygame.KEYDOWN:
