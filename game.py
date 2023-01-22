@@ -4,10 +4,12 @@ import csv
 import os
 import sys
 
+import random
+
 side_winner = None
-time_win = None
-kill_player = None
-kill_enemy = None
+time_win = 0
+kill_player = 0
+kill_enemy = 0
 
 game_over = False
 
@@ -17,9 +19,17 @@ def change_kill_player(var):
     kill_player = var
 
 
+def get_kill_player():
+    return kill_player
+
+
 def change_kill_enemy(var):
     global kill_enemy
     kill_enemy = var
+
+
+def get_kill_enemy():
+    return kill_enemy
 
 
 def change_time_win(var):
@@ -27,9 +37,8 @@ def change_time_win(var):
     time_win = var
 
 
-def change_side_winner(var):
-    global side_winner
-    side_winner = var
+def get_time_win():
+    return time_win
 
 
 def change_game_over(var):
@@ -38,11 +47,11 @@ def change_game_over(var):
 
 
 def game(level, speed, hp_base):
-    global side_winner
     global time_win
     global kill_player
     global kill_enemy
     global game_over
+
 
     with open(level, encoding="utf8") as csvfile:
         reader = csv.DictReader(csvfile, delimiter=',', quotechar='"')
@@ -65,6 +74,7 @@ def game(level, speed, hp_base):
         print(str([elem.split(";")[1:] for elem in level_data[0]["way"].split("|")]))
 
     pygame.init()
+    pygame.font.init()
     size = width, height = 800, 800
     screen = pygame.display.set_mode(size)
 
@@ -108,15 +118,31 @@ def game(level, speed, hp_base):
             self.rect = self.image.get_rect()
             self.side = side
             self.start_pos = None
+            self.enemy_c = False
 
         def update(self, board, event=None):
             if self.side == "player":
                 if player_tick == 0:
                     self.update_movement()
+                if pygame.sprite.spritecollideany(self, enemy_unit):
+                    print(pygame.sprite.spritecollideany(self, enemy_unit))
+                    if pygame.sprite.spritecollideany(self, enemy_unit).get_type_unit() == "paper" and self.type_unit == "scissors" or pygame.sprite.spritecollideany(self, enemy_unit).get_type_unit() == "rock" and self.type_unit == "paper" or pygame.sprite.spritecollideany(self, enemy_unit).get_type_unit() == "scissors" and self.type_unit == "rock":
+                        change_kill_player(get_kill_player() + 1)
+                        pygame.sprite.spritecollideany(self, enemy_unit).kill()
+                    elif pygame.sprite.spritecollideany(self, enemy_unit).get_type_unit() == self.type_unit:
+                        change_kill_enemy(get_kill_enemy() + 1)
+                        change_kill_player(get_kill_player() + 1)
+                        pygame.sprite.spritecollideany(self, enemy_unit).kill()
+                        self.kill()
+                    else:
+                        change_kill_enemy(get_kill_enemy() + 1)
+                        self.kill()
 
             elif self.side == "enemy":
                 if enemy_tick == 0:
                     self.update_movement()
+                if pygame.sprite.spritecollideany(self, player_unit):
+                    print(pygame.sprite.spritecollideany(self, player_unit))
 
 
         def spawn(self, board, cell):
@@ -143,6 +169,7 @@ def game(level, speed, hp_base):
             return self.type_unit
 
         def update_movement(self):
+            enemy_c = False
             if self.side == "player" and not game_over:
                 try:
                     section = way_start_player_pos.index(list(map(lambda x: str(int(x)), self.start_pos)))
@@ -153,14 +180,18 @@ def game(level, speed, hp_base):
                     self.kill()
                     return
             elif self.side == "enemy" and not game_over:
-                try:
-                    section = way_start_enemy_pos.index(list(map(lambda x: str(int(x)), self.start_pos)))
-                    path = level_data[0]["way"].split("|")[section].split(";")
+                section = way_start_enemy_pos.index(list(map(lambda x: str(int(x)), self.start_pos)))
+                path = level_data[0]["way"].split("|")[section].split(";")
+                if path[path.index(",".join(list(map(lambda x: str(int(x)), self.cell)))) - 1].split(",") not in way_start_player_pos and not self.enemy_c:
                     new_cell = path[path.index(",".join(list(map(lambda x: str(int(x)), self.cell)))) - 1]
-                except IndexError:
+                elif path[path.index(",".join(list(map(lambda x: str(int(x)), self.cell)))) - 1].split(",") in way_start_player_pos and not self.enemy_c:
+                    new_cell = path[path.index(",".join(list(map(lambda x: str(int(x)), self.cell)))) - 1]
+                    self.enemy_c = True
+                else:
                     player_base.hearth()
                     self.kill()
                     return
+
             else:
                 return
             self.spawn(board, tuple(map(lambda x: float(x), new_cell.split(","))))
@@ -215,8 +246,9 @@ def game(level, speed, hp_base):
 
         def hearth(self):
             self.hp -= 5
+            print(self.hp)
             if self.hp <= 0:
-                change_game_over(True)
+                change_game_over(self.side)
                 self.kill()
 
 
@@ -282,6 +314,10 @@ def game(level, speed, hp_base):
     clock = pygame.time.Clock()
 
     running = True
+
+    my_font = pygame.font.SysFont('Comic Sans MS', 30)
+    text_surface = my_font.render('Some Text', False, (0, 0, 0))
+
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -302,11 +338,23 @@ def game(level, speed, hp_base):
                     subject_selection = "rock"
                 elif event.key == 51:
                     subject_selection = "scissors"
+        if enemy_tick == player_tick // 2 and not game_over:
+            #print(random.choice(tuple(map(lambda x: tuple(map(lambda y: int(y), x)), way_start_enemy_pos))))
+            Unit(all_sprites, type_unit=random.choice(('paper', 'rock', 'scissors')), side="enemy").spawn(board, random.choice(tuple(map(lambda x: tuple(map(lambda y: int(y), x)), way_start_enemy_pos))))
+
 
         screen.fill((255, 255, 255))
         board.render(screen)
         all_sprites.update(board)
         all_sprites.draw(screen)
+        if game_over:
+            win_text_surface = my_font.render(f"{'enemy' if game_over == 'player' else 'player'} win", False, (0, 0, 0))
+            screen.blit(win_text_surface, (width // 2.5, height // 15))
+            print("time: ", get_time_win() // 60)
+            print("kill enemy: ", get_kill_enemy())
+            print("kill player: ", get_kill_player())
+        else:
+            change_time_win(get_time_win() + 1)
         clock.tick(fps)
         pygame.display.flip()
 
@@ -319,4 +367,4 @@ def game(level, speed, hp_base):
             enemy_tick = 0
 
 
-game("data/1_level.csv", 50, 25)
+game("data/levels/1_level.csv", 50, 10)
