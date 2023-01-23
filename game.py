@@ -6,10 +6,13 @@ import sys
 
 import random
 
+import pygame_gui
+
 side_winner = None
 time_win = 0
 kill_player = 0
 kill_enemy = 0
+switch = None
 
 game_over = False
 
@@ -46,11 +49,23 @@ def change_game_over(var):
     game_over = var
 
 
-def game(level, speed, hp_base):
+def reset():
+    global game_over, time_win, kill_player, kill_enemy, switch, side_winner
+    side_winner = None
+    time_win = 0
+    kill_player = 0
+    kill_enemy = 0
+    switch = None
+
+    game_over = False
+
+
+def game(level, player, speed=50, hp_base=50):
     global time_win
     global kill_player
     global kill_enemy
     global game_over
+    global switch
 
 
     with open(level, encoding="utf8") as csvfile:
@@ -74,7 +89,10 @@ def game(level, speed, hp_base):
         print(str([elem.split(";")[1:] for elem in level_data[0]["way"].split("|")]))
 
     pygame.init()
+    pygame.display.set_caption(level.split("/")[-1])
     pygame.font.init()
+    manager = pygame_gui.UIManager((800, 800))
+
     size = width, height = 800, 800
     screen = pygame.display.set_mode(size)
 
@@ -248,7 +266,13 @@ def game(level, speed, hp_base):
             self.hp -= 5
             print(self.hp)
             if self.hp <= 0:
+                global switch
                 change_game_over(self.side)
+                switch = pygame_gui.elements.UIButton(
+                    relative_rect=pygame.Rect((250, 10), (300, 50)),
+                    text="Exit",
+                    manager=manager
+                )
                 self.kill()
 
 
@@ -315,10 +339,10 @@ def game(level, speed, hp_base):
 
     running = True
 
-    my_font = pygame.font.SysFont('Comic Sans MS', 30)
-    text_surface = my_font.render('Some Text', False, (0, 0, 0))
+    my_font = pygame.font.SysFont('Comic Sans MS', 20)
 
     while running:
+        time_delta = clock.tick(fps) // 1000.0
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -338,6 +362,35 @@ def game(level, speed, hp_base):
                     subject_selection = "rock"
                 elif event.key == 51:
                     subject_selection = "scissors"
+
+            elif event.type == pygame.USEREVENT:
+                if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
+                    if event.ui_element == switch and game_over == "enemy":
+                        reader_data = None
+                        with open("data/players/Players_data.csv", "r") as player_data:
+                            reader_data = list(csv.DictReader(player_data, delimiter=';', quotechar='"'))
+                            for i in range(len(reader_data)):
+                                if reader_data[i]["player_name"] == player and int(reader_data[i][level.split("/")[-1]].split(",")[2]) <= get_kill_player():
+                                    buffer = reader_data[i][level.split("/")[-1]].split(",")
+                                    buffer[0] = get_time_win() // 60
+                                    buffer[1] = get_kill_player()
+                                    buffer[2] = get_kill_enemy()
+                                    reader_data[i][level.split("/")[-1]] = ",".join(list(map(lambda x: str(x), buffer)))
+                        print(reader_data)
+
+                        with open('data/players/Players_data.csv', 'w') as f:
+                            writer = csv.DictWriter(
+                                f, fieldnames=list(reader_data[0].keys()),
+                                delimiter=';', quoting=csv.QUOTE_NONNUMERIC)
+                            writer.writeheader()
+                            for d in reader_data:
+                                writer.writerow(d)
+                            reset()
+                            return
+                    return
+
+            manager.process_events(event)
+        manager.update(time_delta)
         if enemy_tick == player_tick // 2 and not game_over:
             #print(random.choice(tuple(map(lambda x: tuple(map(lambda y: int(y), x)), way_start_enemy_pos))))
             Unit(all_sprites, type_unit=random.choice(('paper', 'rock', 'scissors')), side="enemy").spawn(board, random.choice(tuple(map(lambda x: tuple(map(lambda y: int(y), x)), way_start_enemy_pos))))
@@ -349,13 +402,19 @@ def game(level, speed, hp_base):
         all_sprites.draw(screen)
         if game_over:
             win_text_surface = my_font.render(f"{'enemy' if game_over == 'player' else 'player'} win", False, (0, 0, 0))
-            screen.blit(win_text_surface, (width // 2.5, height // 15))
-            print("time: ", get_time_win() // 60)
-            print("kill enemy: ", get_kill_enemy())
-            print("kill player: ", get_kill_player())
+            time_text_surface = my_font.render(f"time: {get_time_win() // 60}", False, (0, 0, 0))
+            kill_enemy_text_surface = my_font.render(f"kill enemy: {get_kill_enemy()}", False, (0, 0, 0))
+            kill_player_text_surface = my_font.render(f"kill player: {get_kill_player()}", False, (0, 0, 0))
+            screen.blit(win_text_surface, (width // 25 + 50, height // 15))
+            screen.blit(time_text_surface, (width // 2 + 50, height // 15))
+            screen.blit(kill_enemy_text_surface, (width // 1.5 + 50, height // 15))
+            screen.blit(kill_player_text_surface, (width // 4 + 50, height // 15))
+            #print("time: ", get_time_win() // 60)
+            #print("kill enemy: ", get_kill_enemy())
+            #print("kill player: ", get_kill_player())
         else:
             change_time_win(get_time_win() + 1)
-        clock.tick(fps)
+        manager.draw_ui(screen)
         pygame.display.flip()
 
         player_tick += 1
@@ -367,4 +426,87 @@ def game(level, speed, hp_base):
             enemy_tick = 0
 
 
-game("data/levels/1_level.csv", 50, 10)
+def main(player):
+    pygame.init()
+    pygame.font.init()
+    pygame.display.set_caption('Menu')
+    size = width, height = 800, 800
+    screen = pygame.display.set_mode(size)
+    manager = pygame_gui.UIManager((800, 800))
+    clock = pygame.time.Clock()
+    fps = 60
+
+    my_font = pygame.font.SysFont('Comic Sans MS', 20)
+
+    switch_1_level = pygame_gui.elements.UIButton(
+        relative_rect=pygame.Rect((50, 250), (250, 100)),
+        text="level_1",
+        manager=manager
+    )
+
+    switch_2_level = pygame_gui.elements.UIButton(
+        relative_rect=pygame.Rect((500, 250), (250, 100)),
+        text="level_2",
+        manager=manager
+    )
+
+    def update_values():
+        info_1_level = None
+        info_2_level = None
+
+        with open("data/players/Players_data.csv", "r") as player_data:
+            reader_data = list(csv.DictReader(player_data, delimiter=';', quotechar='"'))
+            for elem in reader_data:
+                if elem["player_name"] == player:
+                    info_1_level = elem["1_level.csv"].split(",")
+                    info_1_level[0] = f"time: {info_1_level[0]}"
+                    info_1_level[1] = f"kill pl: {info_1_level[1]}"
+                    info_1_level[2] = f"kill en: {info_1_level[2]}"
+                    info_1_level = ", ".join(info_1_level)
+
+                    info_2_level = elem["2_level.csv"].split(",")
+                    info_2_level[0] = f"time: {info_2_level[0]}"
+                    info_2_level[1] = f"kill pl: {info_2_level[1]}"
+                    info_2_level[2] = f"kill en: {info_2_level[2]}"
+                    info_2_level = ", ".join(info_2_level)
+        return [info_1_level, info_2_level]
+
+    info_1_level, info_2_level = update_values()
+
+    running = True
+    while running:
+        time_delta = clock.tick(fps)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.USEREVENT:
+                if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
+                    if event.ui_element == switch_1_level:
+                        game("data/levels/1_level.csv", "player1", speed=50, hp_base=25)
+                        info_1_level, info_2_level = update_values()
+                        reset()
+                    elif event.ui_element == switch_2_level:
+                        game("data/levels/2_level.csv", "player1", speed=50, hp_base=25)
+                        info_1_level, info_2_level = update_values()
+                        reset()
+                        pass
+
+
+            manager.process_events(event)
+        manager.update(time_delta)
+        screen.fill((0, 0, 0))
+        manager.draw_ui(screen)
+        player_text_surface = my_font.render(f"player: {player}", False, (255, 255, 255))
+        screen.blit(player_text_surface, (50, 50))
+        screen.blit(my_font.render(f"records:", False, (255, 255, 255)), (50, 100))
+
+        screen.blit(my_font.render(f"{info_1_level}", False, (255, 255, 255)), (50, 125))
+        screen.blit(my_font.render(f"{info_2_level}", False, (255, 255, 255)), (500, 125))
+
+        pygame.display.flip()
+    pygame.quit()
+
+
+if __name__ == "__main__":
+    main("player1")
+    #game("data/levels/1_level.csv", "player1", speed=30, hp_base=5)

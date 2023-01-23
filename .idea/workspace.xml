@@ -4,8 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9ca69c27-7a3d-42be-806a-980623bc0cc3" name="Changes" comment="V 0.58 Add - removal base, and adding a pause">
-      <change beforePath="$PROJECT_DIR$/data/1_level.csv" beforeDir="false" />
+    <list default="true" id="9ca69c27-7a3d-42be-806a-980623bc0cc3" name="Changes" comment="V 0.65 Add - enemy AI, and text win (who defeated whom)">
+      <change afterPath="$PROJECT_DIR$/.idea/.name" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/csv-editor.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/players/Player_data.csv" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/game.py" beforeDir="false" afterPath="$PROJECT_DIR$/game.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -25,13 +28,14 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/ewrdt/PycharmProjects/cl_r_rps_YL_Pygame_2&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "last_opened_file_path": "C:/Users/ewrdt/PycharmProjects/cl_r_rps_YL_Pygame_2"
   }
-}</component>
+}]]></component>
   <component name="RunManager" selected="Python.game">
     <configuration name="game" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="pythonProject3w" />
@@ -97,7 +101,14 @@
       <option name="project" value="LOCAL" />
       <updated>1674341924366</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="V 0.65 Add - enemy AI, and text win (who defeated whom)">
+      <created>1674397432282</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1674397432282</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -113,7 +124,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="V 0.58 Add - removal base, and adding a pause" />
-    <option name="LAST_COMMIT_MESSAGE" value="V 0.58 Add - removal base, and adding a pause" />
+    <MESSAGE value="V 0.65 Add - enemy AI, and text win (who defeated whom)" />
+    <option name="LAST_COMMIT_MESSAGE" value="V 0.65 Add - enemy AI, and text win (who defeated whom)" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
