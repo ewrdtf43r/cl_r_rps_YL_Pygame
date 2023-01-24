@@ -1,1 +1,0 @@
-# In the future, it will be an interface
